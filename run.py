@@ -125,7 +125,7 @@ if is_android():
                                startupinfo=startupinfo,
                                env=os.environ)
 elif is_ios():
-    process = subprocess.Popen(['idevicesyslog'], stdout=subprocess.PIPE, env=os.environ)
+    process = subprocess.Popen(['sudo', 'idevicesyslog'], stdout=subprocess.PIPE, env=os.environ)
 else:
     process = MagicMock()
     description = '''
