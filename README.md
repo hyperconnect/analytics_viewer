@@ -23,7 +23,7 @@ So you have to install native tools for getting raw logs.
 2. adb
   - `brew install android-platform-tools`
 3. idevicesyslog
-  - `brew install libimobiledevice`
+  - `brew install --HEAD libimobiledevice`
 4. python3
   - `brew install python3`
 
