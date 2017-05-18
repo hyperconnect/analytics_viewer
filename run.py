@@ -11,7 +11,7 @@ from tkinter.scrolledtext import ScrolledText
 from tkinter import ttk
 from pprint import pprint, pformat
 
-from helper import parse_params, map_params, parse_ios_params, ios_chunk
+from helper import parse_params, map_params, parse_ios_params, ios_chunk, map_adwords_params, parse_adwords_params
 from helper import is_ios, is_android
 
 root = Tk()
@@ -83,15 +83,20 @@ class AsynchronousFileReader(threading.Thread):
                 chunk = ios_chunk(iter(self._fd.readline, None))
                 chunk = '\n'.join([str(line.replace(b'\U', b'\u'), encoding='unicode_escape') for line in chunk])
                 parsed_dict = map_params(parse_ios_params(chunk))
+                parsed_adwords_dict = {}
             elif is_android():
                 line = next(iter(self._fd.readline, None))
-                if line == b'': break
+                if line == b'':
+                    break
                 parsed_dict = map_params(parse_params(line.decode('utf-8').strip()))
+                parsed_adwords_dict = map_adwords_params(parse_adwords_params(line.decode('utf-8').strip()))
             else:
                 line = self._fd.readline()
                 parsed_dict = {'Warning': line.strip()}
-            if parsed_dict == {}: continue
-            track_id = parsed_dict.get('Tracking ID / Web Property ID')
+                parsed_adwords_dict = {}
+            if parsed_dict == {} and parsed_adwords_dict == {}:
+                continue
+            track_id = parsed_dict.get('Tracking ID / Web Property ID') or parsed_adwords_dict.get('Conversion Id')
             if track_id:
                 if track_id not in track_ids:
                     interesting.add(track_id)
@@ -102,7 +107,10 @@ class AsynchronousFileReader(threading.Thread):
                 if track_id not in interesting:
                     continue
             log_text.insert(END, "\n" + pformat(datetime.datetime.now()) + "\n", ('timestamp', track_id))
-            log_text.insert(END, pformat(parsed_dict) + "\n", track_id)
+            if parsed_dict != {}:
+                log_text.insert(END, pformat(parsed_dict) + "\n", track_id)
+            if parsed_adwords_dict != {}:
+                log_text.insert(END, pformat(parsed_adwords_dict) + "\n", track_id)
             log_text.see(END)
 
     def eof(self):
@@ -120,12 +128,12 @@ else:
 if is_android():
     subprocess.Popen(['adb', 'shell', 'setprop', 'log.tag.GAv4', 'DEBUG'],
                      env=os.environ)
-    process = subprocess.Popen(['adb', "logcat", "-s", "GAv4"],
+    process = subprocess.Popen(['adb', "logcat", "-s", "GAv4", "GoogleTagManager", "ArbitraryPixel"],
                                stdout=subprocess.PIPE,
                                startupinfo=startupinfo,
                                env=os.environ)
 elif is_ios():
-    process = subprocess.Popen(['idevicesyslog'], stdout=subprocess.PIPE, env=os.environ)
+    process = subprocess.Popen(['sudo', 'idevicesyslog'], stdout=subprocess.PIPE, env=os.environ)
 else:
     process = MagicMock()
     description = '''

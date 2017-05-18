@@ -5,6 +5,7 @@ import itertools
 import subprocess
 import functools
 
+
 def ios_chunk(line_it):
     chunk_start = b': GoogleAnalytics '
     chunk_end = b'timestamp = '
@@ -12,103 +13,115 @@ def ios_chunk(line_it):
     next(it)
     return itertools.takewhile(lambda x: chunk_end not in x, it)
 
+
 def parse_ios_params(chunk):
     param_pattern = re.compile(r'"&([^\s.]*?)"\s=\s"*(.*?)"*;')
     params = param_pattern.findall(chunk)
     return dict(params)
+
 
 def parse_params(line):
     param_pattern = re.compile(r'([^\s.]*?)=([^,]*)')
     params = param_pattern.findall(line)
     return dict(params)
 
+
+def parse_adwords_params(line):
+    if re.search(r'(url = )', line):
+        parse_line = re.sub(r'(url = )', '', line)
+        param_pattern = re.compile(r'([^&?\s.]*)=([^&]*)')
+        params = param_pattern.findall(parse_line)
+        return dict(params)
+    return {}
+
+
 def map_params(params):
     # ref. https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters
     map_table = {
-        "v":"Protocol Version",
-        "tid":"Tracking ID / Web Property ID",
-        "aip":"Anonymize IP",
-        "ds":"Data Source",
-        "qt":"Queue Time",
-        "z":"Cache Buster",
-        "cid":"Client ID",
-        "uid":"User ID",
-        "sc":"Session Control",
-        "uip":"IP Override",
-        "ua":"User Agent Override",
-        "geoid":"Geographical Override",
-        "dr":"Document Referrer",
-        "cn":"Campaign Name",
-        "cs":"Campaign Source",
-        "cm":"Campaign Medium",
-        "ck":"Campaign Keyword",
-        "cc":"Campaign Content",
-        "ci":"Campaign ID",
-        "gclid":"Google AdWords ID",
-        "dclid":"Google Display Ads ID",
-        "sr":"Screen Resolution",
-        "vp":"Viewport size",
-        "de":"Document Encoding",
-        "sd":"Screen Colors",
-        "ul":"User Language",
-        "je":"Java Enabled",
-        "fl":"Flash Version",
-        "t":"Hit type",
-        "ni":"Non-Interaction Hit",
-        "dl":"Document location URL",
-        "dh":"Document Host Name",
-        "dp":"Document Path",
-        "dt":"Document Title",
-        "cd":"Screen Name",
-        "linkid":"Link ID",
-        "an":"Application Name",
-        "aid":"Application ID",
-        "av":"Application Version",
-        "aiid":"Application Installer ID",
-        "ec":"Event Category",
-        "ea":"Event Action",
-        "el":"Event Label",
-        "ev":"Event Value",
-        "ti":"Transaction ID",
-        "ta":"Transaction Affiliation",
-        "tr":"Transaction Revenue",
-        "ts":"Transaction Shipping",
-        "tt":"Transaction Tax",
-        "in":"Item Name",
-        "ip":"Item Price",
-        "iq":"Item Quantity",
-        "ic":"Item Code",
-        "iv":"Item Category",
-        "cu":"Currency Code",
-        "ti":"Transaction ID",
-        "ta":"Affiliation",
-        "tr":"Revenue",
-        "tt":"Tax",
-        "ts":"Shipping",
-        "tcc":"Coupon Code",
-        "pal":"Product Action List",
-        "cos":"Checkout Step",
-        "col":"Checkout Step Option",
-        "promoa":"Promotion Action",
-        "sn":"Social Network",
-        "sa":"Social Action",
-        "st":"Social Action Target",
-        "utc":"User timing category",
-        "utv":"User timing variable name",
-        "utt":"User timing time",
-        "utl":"User timing label",
-        "plt":"Page Load Time",
-        "dns":"DNS Time",
-        "pdt":"Page Download Time",
-        "rrt":"Redirect Response Time",
-        "tcp":"TCP Connect Time",
-        "srt":"Server Response Time",
-        "dit":"DOM Interactive Time",
-        "clt":"Content Load Time",
-        "exd":"Exception Description",
-        "exf":"Is Exception Fatal?",
-        "xid":"Experiment ID",
-        "xvar":"Experiment Variant",
+        "v": "Protocol Version",
+        "tid": "Tracking ID / Web Property ID",
+        "aip": "Anonymize IP",
+        "ds": "Data Source",
+        "qt": "Queue Time",
+        "z": "Cache Buster",
+        "cid": "Client ID",
+        "uid": "User ID",
+        "sc": "Session Control",
+        "uip": "IP Override",
+        "ua": "User Agent Override",
+        "geoid": "Geographical Override",
+        "dr": "Document Referrer",
+        "cn": "Campaign Name",
+        "cs": "Campaign Source",
+        "cm": "Campaign Medium",
+        "ck": "Campaign Keyword",
+        "cc": "Campaign Content",
+        "ci": "Campaign ID",
+        "gclid": "Google AdWords ID",
+        "dclid": "Google Display Ads ID",
+        "sr": "Screen Resolution",
+        "vp": "Viewport size",
+        "de": "Document Encoding",
+        "sd": "Screen Colors",
+        "ul": "User Language",
+        "je": "Java Enabled",
+        "fl": "Flash Version",
+        "t": "Hit type",
+        "ni": "Non-Interaction Hit",
+        "dl": "Document location URL",
+        "dh": "Document Host Name",
+        "dp": "Document Path",
+        "dt": "Document Title",
+        "cd": "Screen Name",
+        "linkid": "Link ID",
+        "an": "Application Name",
+        "aid": "Application ID",
+        "av": "Application Version",
+        "aiid": "Application Installer ID",
+        "ec": "Event Category",
+        "ea": "Event Action",
+        "el": "Event Label",
+        "ev": "Event Value",
+        "ti": "Transaction ID",
+        "ta": "Transaction Affiliation",
+        "tr": "Transaction Revenue",
+        "ts": "Transaction Shipping",
+        "tt": "Transaction Tax",
+        "in": "Item Name",
+        "ip": "Item Price",
+        "iq": "Item Quantity",
+        "ic": "Item Code",
+        "iv": "Item Category",
+        "cu": "Currency Code",
+        "ti": "Transaction ID",
+        "ta": "Affiliation",
+        "tr": "Revenue",
+        "tt": "Tax",
+        "ts": "Shipping",
+        "tcc": "Coupon Code",
+        "pal": "Product Action List",
+        "cos": "Checkout Step",
+        "col": "Checkout Step Option",
+        "promoa": "Promotion Action",
+        "sn": "Social Network",
+        "sa": "Social Action",
+        "st": "Social Action Target",
+        "utc": "User timing category",
+        "utv": "User timing variable name",
+        "utt": "User timing time",
+        "utl": "User timing label",
+        "plt": "Page Load Time",
+        "dns": "DNS Time",
+        "pdt": "Page Download Time",
+        "rrt": "Redirect Response Time",
+        "tcp": "TCP Connect Time",
+        "srt": "Server Response Time",
+        "dit": "DOM Interactive Time",
+        "clt": "Content Load Time",
+        "exd": "Exception Description",
+        "exf": "Is Exception Fatal?",
+        "xid": "Experiment ID",
+        "xvar": "Experiment Variant",
         "pa": "Product Action",
     }
     pattern_map_table = {
@@ -153,6 +166,34 @@ def map_params(params):
             break
     return result_dict
 
+
+def map_adwords_params(params):
+    # ref. https://developers.google.com/app-conversion-tracking/android/remarketing-server
+    map_table = {
+        "ai": "Ai",
+        "bundleid": "APP Bundle Id",
+        "timestamp": "Timestamp",
+        "idtype": "Identifier Type",
+        "gclid": "Google Click Identifier",
+        "remarketing_only": "Remarketing Only",
+        "conv": "Conversion Id",
+        "osversion": "OS Version",
+        "sdkversion": "SDK Version",
+        "appversion": "APP Version",
+        "label": "Conversion Label",
+        "rdid": "Advertising Identifier",
+        "value": "Value",
+        "lat": "Limit Ad Tracking Status",
+        "md5_advertising_id": "MD5 Hash of the Advertising Identifier"
+    }
+    result_dict = dict()
+    for k, v in params.items():
+        if k in map_table:
+            result_dict[map_table[k]] = v
+            continue
+    return result_dict
+
+
 @functools.lru_cache()
 def is_ios():
     try:
@@ -165,6 +206,7 @@ def is_ios():
         return True
     else:
         return False
+
 
 @functools.lru_cache()
 def is_android():
